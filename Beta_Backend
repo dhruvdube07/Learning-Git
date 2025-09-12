@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Password Logger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+        }
+        .container {
+            max-width: 90%;
+            margin: auto;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="container bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10 w-full max-w-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">My First Password Logger</h1>
+            <p class="text-gray-400 text-sm md:text-base">A simple, client-side project for learning web development.</p>
+        </div>
+
+        <!-- Security Warning Section -->
+        <div class="bg-red-900 bg-opacity-50 border border-red-700 text-red-300 p-4 rounded-xl mb-8">
+            <p class="font-bold mb-2">Important Security Notice:</p>
+            <p class="text-sm">This app stores data directly in your browser's local storage. This is NOT a secure method for storing real passwords. Do not use this for sensitive information. This project is for educational purposes only.</p>
+        </div>
+
+        <!-- Input Form Section -->
+        <div id="input-section" class="space-y-6">
+            <div>
+                <label for="website" class="block text-gray-300 text-sm font-medium mb-1">Website / Service</label>
+                <input type="text" id="website" placeholder="e.g., Google, Amazon" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300">
+            </div>
+            <div>
+                <label for="username" class="block text-gray-300 text-sm font-medium mb-1">Username / Email</label>
+                <input type="text" id="username" placeholder="Your username or email" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300">
+            </div>
+            <div>
+                <label for="password" class="block text-gray-300 text-sm font-medium mb-1">Password</label>
+                <div class="relative">
+                    <input type="password" id="password" placeholder="Enter password or generate one" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300">
+                    <button id="generate-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-sm text-gray-400 hover:text-white transition duration-300">
+                        Generate
+                    </button>
+                </div>
+            </div>
+            <button id="save-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition duration-300 ease-in-out transform hover:scale-105">
+                Save Credential
+            </button>
+            <button id="view-btn" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:bg-gray-700 transition duration-300 ease-in-out transform hover:scale-105">
+                View Saved Credentials
+            </button>
+        </div>
+
+        <!-- Display Section -->
+        <div id="display-section" class="hidden mt-8">
+            <h2 class="text-2xl font-bold mb-4 text-white">Saved Credentials</h2>
+            <div id="credentials-list" class="space-y-4">
+                <!-- Credentials will be dynamically added here -->
+            </div>
+            <button id="back-btn" class="mt-6 bg-gray-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:bg-gray-700 transition duration-300 ease-in-out transform hover:scale-105 w-full">
+                Back
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const saveBtn = document.getElementById('save-btn');
+        const viewBtn = document.getElementById('view-btn');
+        const backBtn = document.getElementById('back-btn');
+        const generateBtn = document.getElementById('generate-btn');
+
+        const websiteInput = document.getElementById('website');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        const inputSection = document.getElementById('input-section');
+        const displaySection = document.getElementById('display-section');
+        const credentialsList = document.getElementById('credentials-list');
+
+        function showMessage(message, type = 'info') {
+            let bgColor = 'bg-blue-600';
+            if (type === 'success') bgColor = 'bg-green-600';
+            if (type === 'error') bgColor = 'bg-red-600';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `fixed bottom-4 left-1/2 -translate-x-1/2 p-4 rounded-xl text-white shadow-lg ${bgColor} z-50 transition-transform duration-300 ease-out transform translate-y-full`;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.classList.remove('translate-y-full');
+                messageDiv.classList.add('translate-y-0');
+            }, 10);
+
+            setTimeout(() => {
+                messageDiv.classList.add('translate-y-full');
+                messageDiv.addEventListener('transitionend', () => messageDiv.remove());
+            }, 3000);
+        }
+
+        // --- Save Functionality ---
+        saveBtn.addEventListener('click', () => {
+            const website = websiteInput.value.trim();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!website || !username || !password) {
+                showMessage('All fields are required!', 'error');
+                return;
+            }
+
+            const credentials = JSON.parse(localStorage.getItem('passwords') || '[]');
+            credentials.push({ website, username, password });
+            localStorage.setItem('passwords', JSON.stringify(credentials));
+
+            showMessage('Credentials saved successfully!', 'success');
+
+            // Clear inputs
+            websiteInput.value = '';
+            usernameInput.value = '';
+            passwordInput.value = '';
+        });
+
+        // --- View Functionality ---
+        viewBtn.addEventListener('click', () => {
+            const credentials = JSON.parse(localStorage.getItem('passwords') || '[]');
+
+            inputSection.classList.add('hidden');
+            displaySection.classList.remove('hidden');
+
+            credentialsList.innerHTML = ''; // Clear previous content
+
+            if (credentials.length === 0) {
+                credentialsList.innerHTML = '<p class="text-center text-gray-500">No credentials saved yet.</p>';
+                return;
+            }
+
+            credentials.forEach((item, index) => {
+                const credentialCard = document.createElement('div');
+                credentialCard.className = 'bg-gray-700 p-6 rounded-xl shadow-md flex flex-col md:flex-row md:items-center justify-between';
+                
+                credentialCard.innerHTML = `
+                    <div class="mb-4 md:mb-0">
+                        <p class="text-lg font-bold">${item.website}</p>
+                        <p class="text-gray-400 text-sm">Username: <span class="text-gray-200">${item.username}</span></p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <input type="text" value="${item.password}" readonly class="flex-grow bg-gray-800 text-gray-200 rounded-lg py-2 px-3 border border-gray-600 focus:outline-none w-full md:w-auto">
+                        <button class="copy-btn bg-gray-600 text-white py-2 px-4 rounded-lg shadow hover:bg-gray-500 transition duration-300">Copy</button>
+                        <button class="delete-btn bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-500 transition duration-300">Delete</button>
+                    </div>
+                `;
+                credentialsList.appendChild(credentialCard);
+
+                // Add event listeners for copy and delete buttons
+                credentialCard.querySelector('.copy-btn').addEventListener('click', (e) => {
+                    const passwordField = e.target.parentElement.querySelector('input');
+                    passwordField.select();
+                    document.execCommand('copy');
+                    showMessage('Password copied to clipboard!', 'success');
+                });
+
+                credentialCard.querySelector('.delete-btn').addEventListener('click', () => {
+                    credentials.splice(index, 1);
+                    localStorage.setItem('passwords', JSON.stringify(credentials));
+                    showMessage('Credential deleted.', 'info');
+                    // Re-render the list after deletion
+                    viewBtn.click();
+                });
+            });
+        });
+
+        // --- Back Button Functionality ---
+        backBtn.addEventListener('click', () => {
+            displaySection.classList.add('hidden');
+            inputSection.classList.remove('hidden');
+        });
+
+        // --- Password Generator ---
+        generateBtn.addEventListener('click', () => {
+            const length = 16;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            passwordInput.value = password;
+        });
+
+    </script>
+</body>
+</html>
